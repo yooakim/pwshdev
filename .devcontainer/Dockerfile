@@ -1,7 +1,13 @@
-FROM mcr.microsoft.com/powershell:7.3-ubuntu-22.04
+FROM mcr.microsoft.com/powershell:7.5-ubuntu-24.04
 
+ARG USERNAME
+ENV USERNAME=${USERNAME:-snover}
+
+
+# Switch to root user for setup
+USER root
 # Set working directory so stuff doesn't end up in /
-WORKDIR /root
+WORKDIR /home/$USERNAME
 
 
 # Configure apt
@@ -23,7 +29,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*ssh
 
 # Add non-root user
-ARG USERNAME=notroot
 RUN groupadd --gid 1000 $USERNAME && \
     useradd --uid 1000 --gid 1000 -m $USERNAME
 
@@ -45,4 +50,9 @@ RUN Set-PSRepository -Name PSGallery -InstallationPolicy Trusted  && \
     Add-Content -Path $PROFILE -Value 'Set-PSReadLineOption -PredictionSource History'  && \
     Add-Content -Path $PROFILE -Value 'Set-PSReadLineOption -EditMode Windows'  && \
     Add-Content -Path $PROFILE -Value 'Set-PSReadLineOption -PredictionViewStyle ListView'
+
+# Set permissions in the same layer as it's related to setup
+RUN chown -R $USERNAME:$USERNAME /home/$USERNAME
+
+CMD ["pwsh"]
 
